@@ -1,4 +1,4 @@
-
+# Try 'smaller' encoder to replace original transformer encoder
 ## How to run:
 
 - Train
