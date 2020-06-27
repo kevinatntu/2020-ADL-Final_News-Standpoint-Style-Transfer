@@ -17,7 +17,8 @@ class Vocab():
             2: '<eos>', 
             3: '<unk>', 
         }
-        assert len(self.word2id) == len(self.id2word)
+        self.builtin_words = set(self.word2id.keys())
+        self.word_count = {}
         self.size = len(self.word2id)
         self.tokenize_func = tokenize_func
 
@@ -34,11 +35,32 @@ class Vocab():
 
 
     def add_word(self, word):
+        """add a word to the word pool. will NOT build the dict"""
+        word = word.strip().lower()
+        if word in self.builtin_words:
+            return
+        if word not in self.word_count:
+            self.word_count[word] = 1
+        else:
+            self.word_count[word] += 1
+        
+
+    def _add_word_to_dict(self, word):
         word = word.strip().lower()
         if word not in self.word2id:
             self.word2id[word] = self.size
             self.id2word[self.size] = word
             self.size += 1
+
+
+    def build_dict(self, min_word_cnt_filter=5):
+        word_count_pairs = sorted(self.word_count.items(), key=lambda x: x[1], reverse=True)
+        print('total read:', len(word_count_pairs))
+        for word, cnt in word_count_pairs:
+            if cnt < min_word_cnt_filter:
+                break
+            self._add_word_to_dict(word)
+        
 
 
     def add_word_from_sentence(self, sentence):
@@ -47,6 +69,8 @@ class Vocab():
 
 
     def convert_word_to_id(self, word):
+        if word not in self.word2id:
+            word = '<unk>'
         return self.word2id[word]
 
     def convert_id_to_word(self, id):
@@ -72,7 +96,7 @@ class Vocab():
 
 def preprocess(low_occur_word_filter=0):
     vocab = Vocab()
-    data = []
+    data = []  # store converted sentence ids
     label = [0, 1, 0, 1, 0, 1]
 
     # load preprocessed data if available
@@ -85,6 +109,7 @@ def preprocess(low_occur_word_filter=0):
     
         if data != [] and vocab.size > 4:
             print('done.')
+            print('vocab size:', vocab.size)
             return data, label, vocab
         print('failed.')
     
@@ -98,12 +123,33 @@ def preprocess(low_occur_word_filter=0):
         'sentiment.test.0', 'sentiment.test.1'
         ]
 
+    # build word pool
+    print('collecting words...')
+    for i in range(3):
+        with open(data_dir + filename_list[i*2], 'r') as f:
+            for line in f:
+                line = line.strip().lower()
+                vocab.add_word_from_sentence(line)
+
+        with open(data_dir + filename_list[i*2+1], 'r') as f:
+            for line in f:
+                line = line.strip().lower()
+                vocab.add_word_from_sentence(line)
+
+    # build word dict
+    print('building word dict...')
+    vocab.build_dict()
+    print('vocab size:', vocab.size)
+    vocab.dump()
+
+    # convert word to ids
+    print('converting sentences...')
+    vocab.load()
     for i in range(3):
         with open(data_dir + filename_list[i*2], 'r') as f:
             ids_list = []
             for line in f:
                 line = line.strip().lower()
-                vocab.add_word_from_sentence(line)
                 ids_list.append(vocab.convert_sentence_to_ids(line))
                 
             data.append(ids_list)
@@ -112,17 +158,10 @@ def preprocess(low_occur_word_filter=0):
             ids_list = []
             for line in f:
                 line = line.strip().lower()
-                vocab.add_word_from_sentence(line)
                 ids_list.append(vocab.convert_sentence_to_ids(line))
                 
             data.append(ids_list)
 
-    # discard words with low occurrence or not. 
-    if low_occur_word_filter:
-        pass
-
-    print('vocab size:', vocab.size)
-    vocab.dump()
     with open('./data.json', 'w') as f:
         json.dump([data, label], f)
 

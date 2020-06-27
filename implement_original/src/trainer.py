@@ -84,20 +84,26 @@ class Trainer():
             tgt_key_padding_mask = tgt_key_padding_mask.to(self.args.device)
             label = label.to(self.args.device)
             
-            # update autoencoder
-            # latent: (bsize, d_model), prob: (bsize, seq_len, vocab)
+            # +--------------------+
+            # | update autoencoder |
+            # +--------------------+
+            # latent: (bsize, d_model)
+            # prob  : (bsize, seq_len, vocab)
             latent, prob = self.ae_model(src, tgt, src_mask=None, tgt_mask=None, 
                                             src_key_padding_mask=src_key_padding_mask, 
                                             tgt_key_padding_mask=tgt_key_padding_mask)
             ae_loss = self.ae_criteria(prob.contiguous().view(-1, self.vocab.size),
-                                    tgt_truth.contiguous().view(-1)) / num_tokens.item()
+                                        tgt_truth.contiguous().view(-1)) / num_tokens.item()
 
             if training:
                 self.ae_optimizer.zero_grad()
                 ae_loss.backward()
                 self.ae_optimizer.step()
 
-            # update classifier
+        
+            # +-------------------+
+            # | update classifier |
+            # +-------------------+
             label_predict = self.cls_model(latent.clone().detach())
             cls_loss = self.cls_criteria(label_predict, label)
 
@@ -108,10 +114,11 @@ class Trainer():
 
 
             trange.set_postfix(ae_loss=ae_loss.item(), cls_loss=cls_loss.item())
-
+            
 
             if batch_id % 200 == 0:
                 print('\n')
+                print(f'label: {round(label[0].item(), 2)} | cls_pred: {round(label_predict[0].item(), 2)}')
                 print('original: \n' + self.vocab.convert_ids_to_sentence(tgt_truth[0, :]))
                 # latent: (bsize, d_model) -> (1, bsize=1, d_model)
                 predicted_ids = self.ae_model.decode(latent.unsqueeze(0)[:, 0, :].unsqueeze(0),
@@ -120,28 +127,29 @@ class Trainer():
                                                             eos_id=dataset.eos_id, 
                                                             pad_id=dataset.pad_id)
                 print('ae-decoded: \n' + self.vocab.convert_ids_to_sentence(predicted_ids[0, :], convert_all=False))
-                # print('tgt: \n' + self.vocab.convert_ids_to_sentence(tgt[0, :], convert_all=True))
-                # print('tgt-truth: \n' + self.vocab.convert_ids_to_sentence(tgt_truth[0, :], convert_all=True))
 
-                if not training:
+                if not training or 1:
                     origin_latent = latent
+                    label = (label < 0.5).type(torch.float32)
                     for epsilon in [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]:
                         print(f'----initial epsilon = {epsilon}----')
                         latent = origin_latent
                         
                         for fg_iter in range(5):
-                            latent = run_fast_grad_iter(self.ae_model, self.cls_model, latent, label, epsilon)
+                            latent, label_pred = run_fast_grad_iter(self.ae_model, self.cls_model, latent, label, epsilon)
                             epsilon = epsilon * 0.9
                             predicted_ids = self.ae_model.decode(latent.unsqueeze(0)[:, 0, :].unsqueeze(0),
                                                                         max_len=self.args.max_seq_length,
                                                                         bos_id=dataset.bos_id, 
                                                                         eos_id=dataset.eos_id, 
                                                                         pad_id=dataset.pad_id)
-                            print(f'iter: {fg_iter} | eps: {epsilon}\n' + self.vocab.convert_ids_to_sentence(predicted_ids[0, :], convert_all=False))
+                            print(f'iter: {fg_iter} | eps: {epsilon} | cls_pred: {round(label_pred[0].item(), 2)}\n' + self.vocab.convert_ids_to_sentence(predicted_ids[0, :], convert_all=False))
 
                     print('---------------------')
 
                 print('\n')
+
+        self.save_model(epoch)
 
 
 

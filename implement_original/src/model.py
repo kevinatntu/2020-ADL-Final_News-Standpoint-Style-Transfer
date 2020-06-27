@@ -9,7 +9,7 @@ class LabelSmoothedKLDivLoss(nn.KLDivLoss):
     """
         KLDivLoss with label smoothing implemented. 
     """
-    def __init__(self, vocab_size, ignore_id, smoothing_level=0.0, reduction='mean', log_target=False):
+    def __init__(self, vocab_size, ignore_id, smoothing_level=0.1, reduction='mean', log_target=False):
         super(LabelSmoothedKLDivLoss, self).__init__(size_average=False)
         self.vocab_size = vocab_size
         self.ignore_id = ignore_id
@@ -32,7 +32,7 @@ class LabelSmoothedKLDivLoss(nn.KLDivLoss):
         mask = torch.nonzero(target.data == self.ignore_id)
         if mask.shape[0] > 0:
             true_dist[mask, :] = 0.0
-            true_dist[mask, self.ignore_id] = 1.0
+            # true_dist[mask, self.ignore_id] = 1.0
         
         loss = super(LabelSmoothedKLDivLoss, self).forward(x, true_dist.detach())
         return loss
@@ -55,7 +55,11 @@ def run_fast_grad_iter(ae_model, cls_model, latent, label, epsilon):
     
     # update the latent by the gradient
     data = data - epsilon * data_grad
-    return data
+
+    with torch.no_grad():
+        label_pred = cls_model(data)
+
+    return data, label_pred
 
 
 

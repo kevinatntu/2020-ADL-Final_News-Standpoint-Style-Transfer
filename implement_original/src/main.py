@@ -19,8 +19,8 @@ def parse_args():
     
     # training process related 
     parser.add_argument("--bsize", type=int, default=128)
-    parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--epoch", type=int, default=10)
+    # parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--epoch_max", type=int, default=200)
     parser.add_argument('--max_seq_length', type=int, default=60)
 
     parser.add_argument("--num_workers", type=int, default=0)
@@ -45,6 +45,8 @@ if __name__ == "__main__":
     # preprocess and get word dict
     data, label, vocab = preprocess()  # data = [train_pos, train_neg, dev_pos, dev_neg, test_pos, test_neg]
     train_pos, train_neg, dev_pos, dev_neg, _, _ = data
+    # print(vocab.id2word)
+    # exit()
 
     # build datasets
     trainset = TFDataset(train_pos, train_neg, vocab, args.max_seq_length)
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     
 
     print('start training...')
-    for epoch in range(args.start_epoch, args.start_epoch + args.epoch):
+    for epoch in range(args.epoch_max):
         print('epoch', epoch)
         if args.valid:
             trainer.run_epoch(epoch, training=False)
