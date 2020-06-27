@@ -35,4 +35,4 @@
 	  python main.py --task=[TASK TYPE] --batch_size=[BATCH_SIZE] --[eval_positive, eval_negative]
 	  ```
 
-Note: The codes are similiar to codes in 'Bert'
+Note: The codes are similiar to codes in 'BERT'
