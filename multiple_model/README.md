@@ -33,6 +33,4 @@
 	* ```
 	  python main.py --task=[TASK TYPE] --batch_size=[BATCH_SIZE] --[eval_positive, eval_negative]
 	  ```
-	```
-	
-	```
+
