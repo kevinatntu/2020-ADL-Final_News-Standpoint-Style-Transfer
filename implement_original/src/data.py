@@ -1,10 +1,11 @@
 import nltk
 import json
 import os
+from transformers import BertTokenizer
 
 
 class Vocab():
-    def __init__(self, tokenize_func=nltk.word_tokenize):
+    def __init__(self, tokenizer=None, tokenize_func=nltk.word_tokenize):
         self.word2id = {
             '<pad>': 0, 
             '<bos>': 1, 
@@ -20,17 +21,18 @@ class Vocab():
         self.builtin_words = set(self.word2id.keys())
         self.word_count = {}
         self.size = len(self.word2id)
+        self.tokenizer = tokenizer
         self.tokenize_func = tokenize_func
 
 
     def load(self, path='./vocab.json'):
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             self.word2id, self.id2word = json.load(f)
             self.size = len(self.word2id)
 
 
     def dump(self, path='./vocab.json'):
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump([self.word2id, self.id2word], f)
 
 
@@ -94,17 +96,37 @@ class Vocab():
     
 
 
-def preprocess(low_occur_word_filter=0):
-    vocab = Vocab()
+def preprocess(data_dir='./data/yelp/', task='yelp', lang='en'):
+    
+    
+    if task == 'task1':
+        lang = 'zh'
+        data_dir='./data/task1/'
+    elif task == 'task2':
+        lang = 'zh'
+        data_dir='./data/task2/'
+    # elif task == 'task3':
+    #     lang = 'zh'
+    #     data_dir='./data/task3/'
+    
+    
+    if lang == 'en':
+        vocab = Vocab()
+    elif lang == 'zh':
+        tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
+        tokenize_func = tokenizer.tokenize
+        vocab = Vocab(tokenizer=tokenizer, tokenize_func=tokenize_func) 
+    
+    
     data = []  # store converted sentence ids
     label = [0, 1, 0, 1, 0, 1]
 
     # load preprocessed data if available
-    if os.path.exists('./vocab.json') and os.path.exists('./data.json'):
+    if os.path.exists(f'{data_dir}/vocab.json') and os.path.exists(f'{data_dir}/data.json'):
         print('loading preprocessed data...', end='')
-        vocab.load()
+        vocab.load(path=f'{data_dir}/vocab.json')
 
-        with open('./data.json', 'r') as f:
+        with open(f'{data_dir}/data.json', 'r', encoding='utf-8') as f:
             data, label = json.load(f)
     
         if data != [] and vocab.size > 4:
@@ -116,53 +138,60 @@ def preprocess(low_occur_word_filter=0):
     
     print('preprocessing data...')
     # read data
-    data_dir = './data/'
     filename_list = [
-        'sentiment.train.0', 'sentiment.train.1',
-        'sentiment.dev.0', 'sentiment.dev.1',
-        'sentiment.test.0', 'sentiment.test.1'
+        'train.0', 'train.1',
+        'dev.0', 'dev.1',
+        'test.0', 'test.1'
         ]
 
     # build word pool
     print('collecting words...')
     for i in range(3):
-        with open(data_dir + filename_list[i*2], 'r') as f:
+        with open(data_dir + filename_list[i*2], 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip().lower()
+                if line == '':
+                    continue
                 vocab.add_word_from_sentence(line)
 
-        with open(data_dir + filename_list[i*2+1], 'r') as f:
+        with open(data_dir + filename_list[i*2+1], 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip().lower()
+                if line == '':
+                    continue
                 vocab.add_word_from_sentence(line)
 
     # build word dict
     print('building word dict...')
     vocab.build_dict()
     print('vocab size:', vocab.size)
-    vocab.dump()
+    vocab.dump(path=f'{data_dir}/vocab.json')
 
     # convert word to ids
     print('converting sentences...')
-    vocab.load()
+    vocab.load(path=f'{data_dir}/vocab.json')
     for i in range(3):
-        with open(data_dir + filename_list[i*2], 'r') as f:
+        with open(data_dir + filename_list[i*2], 'r', encoding='utf-8') as f:
             ids_list = []
             for line in f:
                 line = line.strip().lower()
+                if line == '':
+                    continue
                 ids_list.append(vocab.convert_sentence_to_ids(line))
                 
             data.append(ids_list)
 
-        with open(data_dir + filename_list[i*2+1], 'r') as f:
+        with open(data_dir + filename_list[i*2+1], 'r', encoding='utf-8') as f:
             ids_list = []
             for line in f:
                 line = line.strip().lower()
+                if line == '':
+                    continue
                 ids_list.append(vocab.convert_sentence_to_ids(line))
                 
             data.append(ids_list)
 
-    with open('./data.json', 'w') as f:
+    with open(f'{data_dir}/data.json', 'w') as f:
         json.dump([data, label], f)
 
     return data, label, vocab

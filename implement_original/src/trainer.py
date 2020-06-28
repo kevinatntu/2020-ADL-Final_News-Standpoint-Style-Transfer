@@ -128,7 +128,7 @@ class Trainer():
                                                             pad_id=dataset.pad_id)
                 print('ae-decoded: \n' + self.vocab.convert_ids_to_sentence(predicted_ids[0, :], convert_all=False))
 
-                if not training or 1:
+                if not training:
                     origin_latent = latent
                     label = (label < 0.5).type(torch.float32)
                     for epsilon in [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]:

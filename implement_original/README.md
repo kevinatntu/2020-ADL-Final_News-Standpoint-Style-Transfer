@@ -7,14 +7,37 @@ This is our implementation of the paper ["Controllable Unsupervised Text Attribu
 ### Dependencies
 
 ```
-#TODO
+torch
+transformers
+nltk
+tqdm
 ```
 
 ### Training
 
+* Try Yelp dataset: 
+
 ```
-python main.py
+python main.py --task yelp
 ```
+
+* Run Task1 (國臺辦 v.s. 臺獨聯盟): 
+
+```
+python main.py --task task1
+```
+
+* Run Task2 (國臺辦 v.s. 臺灣新聞): 
+
+```
+python main.py --task task2
+```
+* Run Task3 (國臺辦 v.s. 臺獨聯盟, 臺灣新聞=0.5): 
+
+```
+python main.py --task task3
+```
+
 
 ## reference
 
