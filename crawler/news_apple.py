@@ -96,7 +96,7 @@ def parse_url(url):
     game_id = re.findall('date=(.*?)&', url)[0]+'_'+re.findall('page=(.*?)$', url)[0]
 
     temp0 = data[1].iloc[1,0]
-    env = temp0.split('\xa0')[0:5] + re.findall("([A-Z]\d?)",temp0) + re.findall("\((.*?)\)",temp0) + re.findall("場地:(.*?) ",temp0)
+    env = temp0.split('\xa0')[0:5] + re.findall("([A-Z]\d?)",temp0) + re.findall("\((.*?)\)",temp0) + re.findall(":(.*?) ",temp0)
     env += re.findall(":(\d+)",temp0) + re.findall(":.*?(\d+.\d+)",temp0)
     if re.findall(":.*?(\d+.\d+)",temp0):
         env += re.findall(":.*?(\d+.\d+)",temp0)
