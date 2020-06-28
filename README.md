@@ -8,3 +8,5 @@
     - multiple_model: Try smaller encoder
 - 每種Code的執行方式
     - 詳見各資料夾的Readme.md
+- 新聞媒體爬蟲工具
+    - 見crawler folder
