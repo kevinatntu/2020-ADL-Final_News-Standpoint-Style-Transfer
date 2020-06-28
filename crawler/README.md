@@ -31,4 +31,7 @@
   ```
   python crawl_gwytb.py
   ```
-  
+* 蘋果： You need to use selenium with Extensions on Firefox.
+  ```
+  python news_apple.py
+  ```
