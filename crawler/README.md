@@ -33,5 +33,5 @@
   ```
 * 蘋果： You need to use selenium with Extensions on Firefox.
   ```
-  python news_apple.py
+  python crawl_apple.py
   ```
